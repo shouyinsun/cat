@@ -66,7 +66,7 @@ public class DefaultTransaction extends AbstractMessage implements Transaction {
 	}
 
 	@Override
-	public void complete() {
+	public void complete() {//complete 完成
 		try {
 			if (isCompleted()) {
 				// complete() was called more than once
@@ -81,6 +81,7 @@ public class DefaultTransaction extends AbstractMessage implements Transaction {
 				}
 				setCompleted(true);
 				if (m_manager != null) {
+					//transaction 的 complete 是 end
 					m_manager.end(this);
 				}
 			}

@@ -31,10 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+//transaction聚合器
 public class TransactionAggregator {
 
 	private static TransactionAggregator s_instance = new TransactionAggregator();
 
+
+	//type -> (name -> TransactionData)
 	private volatile ConcurrentHashMap<String, ConcurrentHashMap<String, TransactionData>> m_transactions = new ConcurrentHashMap<String, ConcurrentHashMap<String, TransactionData>>();
 
 	public static TransactionAggregator getInstance() {
@@ -45,6 +48,7 @@ public class TransactionAggregator {
 		return new TransactionData(type, name);
 	}
 
+	//获取并重置
 	public ConcurrentHashMap<String, ConcurrentHashMap<String, TransactionData>> getAndResetTransactions() {
 		ConcurrentHashMap<String, ConcurrentHashMap<String, TransactionData>> cloned = m_transactions;
 
@@ -53,6 +57,7 @@ public class TransactionAggregator {
 		for (Entry<String, ConcurrentHashMap<String, TransactionData>> entry : cloned.entrySet()) {
 			String type = entry.getKey();
 
+			//new ConcurrentHashMap() 重置
 			m_transactions.putIfAbsent(type, new ConcurrentHashMap<String, TransactionData>());
 		}
 
@@ -67,6 +72,7 @@ public class TransactionAggregator {
 		makeSureTransactionExist(type, name).add(count, error, sum);
 	}
 
+	//记录transaction
 	public void logTransaction(Transaction t) {
 		makeSureTransactionExist(t.getType(), t.getName()).add(t);
 	}
@@ -101,13 +107,14 @@ public class TransactionAggregator {
 		return data;
 	}
 
+	//发送transaction数据
 	public void sendTransactionData() {
 		ConcurrentHashMap<String, ConcurrentHashMap<String, TransactionData>> transactions = getAndResetTransactions();
 		boolean hasData = false;
 
 		for (Map<String, TransactionData> entry : transactions.values()) {
 			for (TransactionData data : entry.values()) {
-				if (data.getCount().get() > 0) {
+				if (data.getCount().get() > 0) {//有统计值
 					hasData = true;
 					break;
 				}
@@ -115,6 +122,7 @@ public class TransactionAggregator {
 		}
 
 		if (hasData) {
+			//System TransactionAggregator
 			Transaction t = Cat.newTransaction(CatConstants.CAT_SYSTEM, this.getClass().getSimpleName());
 			MessageTree tree = Cat.getManager().getThreadLocalMessageTree();
 
@@ -143,6 +151,7 @@ public class TransactionAggregator {
 		}
 	}
 
+	//长操作阈值
 	private int checkAndGetLongThreshold(String type, int duration) {
 		ClientConfigManager config = Cat.getManager().getConfigManager();
 		ProblemLongType longType = ProblemLongType.findByMessageType(type);
@@ -178,8 +187,10 @@ public class TransactionAggregator {
 
 		private AtomicLong m_sum = new AtomicLong();
 
+		//Duration -> count
 		private ConcurrentHashMap<Integer, AtomicInteger> m_durations = new ConcurrentHashMap<Integer, AtomicInteger>();
 
+		//长操作
 		private ConcurrentHashMap<Integer, AtomicInteger> m_longDurations = new ConcurrentHashMap<Integer, AtomicInteger>();
 
 		public TransactionData(String type, String name) {

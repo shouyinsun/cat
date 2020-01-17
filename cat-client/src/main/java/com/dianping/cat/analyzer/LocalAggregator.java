@@ -27,6 +27,8 @@ import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.util.Threads.Task;
 
+
+//本地数据聚合
 public class LocalAggregator {
 
 	public static void aggregate(MessageTree tree) {
@@ -36,14 +38,15 @@ public class LocalAggregator {
 	private static void analyzerProcessTree(MessageTree tree) {
 		Message message = tree.getMessage();
 
-		if (message instanceof Transaction) {
+		if (message instanceof Transaction) {//transaction
 			analyzerProcessTransaction((Transaction) message);
-		} else if (message instanceof Event) {
+		} else if (message instanceof Event) {//event
 			EventAggregator.getInstance().logEvent((Event) message);
 		}
 	}
 
 	private static void analyzerProcessTransaction(Transaction transaction) {
+		//记录transaction
 		TransactionAggregator.getInstance().logTransaction(transaction);
 		List<Message> child = transaction.getChildren();
 
@@ -51,6 +54,7 @@ public class LocalAggregator {
 			if (message instanceof Transaction) {
 				analyzerProcessTransaction((Transaction) message);
 			} else if (message instanceof Event) {
+				//记录event
 				EventAggregator.getInstance().logEvent((Event) message);
 			}
 		}
@@ -67,11 +71,13 @@ public class LocalAggregator {
 
 		@Override
 		public void run() {
-			while (m_active) {
+			while (m_active) {//1s 一次
 				long start = System.currentTimeMillis();
 
 				try {
+					//发送transaction数据
 					TransactionAggregator.getInstance().sendTransactionData();
+					//发送event数据
 					EventAggregator.getInstance().sendEventData();
 				} catch (Exception ex) {
 					Cat.logError(ex);

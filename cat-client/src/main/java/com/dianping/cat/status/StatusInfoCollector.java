@@ -44,9 +44,11 @@ import com.dianping.cat.status.model.entity.StatusInfo;
 import com.dianping.cat.status.model.entity.ThreadsInfo;
 import com.dianping.cat.status.model.transform.BaseVisitor;
 
+//心跳、状态信息收集器
 public class StatusInfoCollector extends BaseVisitor {
 	private MessageStatistics m_statistics;
 
+	//是否dump lock的线程
 	private boolean m_dumpLocked;
 
 	private String m_jars;
@@ -94,7 +96,7 @@ public class StatusInfoCollector extends BaseVisitor {
 		return m_jstackInfo;
 	}
 
-	private String getThreadDump(ThreadInfo[] threads) {
+	private String getThreadDump(ThreadInfo[] threads) {//线程dump
 		StringBuilder sb = new StringBuilder(32768);
 		int index = 1;
 
@@ -135,7 +137,7 @@ public class StatusInfoCollector extends BaseVisitor {
 	}
 
 	@Override
-	public void visitDisk(DiskInfo disk) {
+	public void visitDisk(DiskInfo disk) {//磁盘
 		File[] roots = File.listRoots();
 
 		if (roots != null) {
@@ -154,19 +156,25 @@ public class StatusInfoCollector extends BaseVisitor {
 	}
 
 	@Override
-	public void visitDiskVolume(DiskVolumeInfo diskVolume) {
+	public void visitDiskVolume(DiskVolumeInfo diskVolume) {//磁盘统计
 		Extension diskExtension = m_statusInfo.findOrCreateExtension("Disk");
 		File volume = new File(diskVolume.getId());
 
+		//total
 		diskVolume.setTotal(volume.getTotalSpace());
+		//free
 		diskVolume.setFree(volume.getFreeSpace());
+		//usable
 		diskVolume.setUsable(volume.getUsableSpace());
 
 		diskExtension.findOrCreateExtensionDetail(diskVolume.getId() + " Free").setValue(volume.getFreeSpace());
 	}
 
 	@Override
-	public void visitMemory(MemoryInfo memory) {
+	public void visitMemory(MemoryInfo memory) {//内存
+
+		//JMX
+		//MemoryMXBean
 		MemoryMXBean bean = ManagementFactory.getMemoryMXBean();
 		Runtime runtime = Runtime.getRuntime();
 
@@ -176,6 +184,7 @@ public class StatusInfoCollector extends BaseVisitor {
 		memory.setHeapUsage(bean.getHeapMemoryUsage().getUsed());
 		memory.setNonHeapUsage(bean.getNonHeapMemoryUsage().getUsed());
 
+		//GarbageCollectorMXBeans
 		List<GarbageCollectorMXBean> beans = ManagementFactory.getGarbageCollectorMXBeans();
 		Extension gcExtension = m_statusInfo.findOrCreateExtension("GC");
 
@@ -218,7 +227,7 @@ public class StatusInfoCollector extends BaseVisitor {
 	}
 
 	@Override
-	public void visitOs(OsInfo os) {
+	public void visitOs(OsInfo os) {//操作系统
 		Extension systemExtension = m_statusInfo.findOrCreateExtension("System");
 		OperatingSystemMXBean bean = ManagementFactory.getOperatingSystemMXBean();
 
@@ -226,6 +235,7 @@ public class StatusInfoCollector extends BaseVisitor {
 		os.setName(bean.getName());
 		os.setVersion(bean.getVersion());
 		os.setAvailableProcessors(bean.getAvailableProcessors());
+		//负载
 		os.setSystemLoadAverage(bean.getSystemLoadAverage());
 
 		systemExtension.findOrCreateExtensionDetail("LoadAverage").setValue(bean.getSystemLoadAverage());
@@ -234,11 +244,16 @@ public class StatusInfoCollector extends BaseVisitor {
 		if (isInstanceOfInterface(bean.getClass(), "com.sun.management.OperatingSystemMXBean")) {
 			com.sun.management.OperatingSystemMXBean b = (com.sun.management.OperatingSystemMXBean) bean;
 
+			//物理内存
 			os.setTotalPhysicalMemory(b.getTotalPhysicalMemorySize());
+			//free物理内存
 			os.setFreePhysicalMemory(b.getFreePhysicalMemorySize());
+			//交换空间
 			os.setTotalSwapSpace(b.getTotalSwapSpaceSize());
+			//free交换空间
 			os.setFreeSwapSpace(b.getFreeSwapSpaceSize());
 			os.setProcessTime(b.getProcessCpuTime());
+			//虚拟内存
 			os.setCommittedVirtualMemory(b.getCommittedVirtualMemorySize());
 
 			systemExtension.findOrCreateExtensionDetail("FreePhysicalMemory").setValue(b.getFreePhysicalMemorySize());
@@ -248,7 +263,7 @@ public class StatusInfoCollector extends BaseVisitor {
 	}
 
 	@Override
-	public void visitRuntime(RuntimeInfo runtime) {
+	public void visitRuntime(RuntimeInfo runtime) {//runtime
 		RuntimeMXBean bean = ManagementFactory.getRuntimeMXBean();
 
 		runtime.setStartTime(bean.getStartTime());
@@ -274,15 +289,16 @@ public class StatusInfoCollector extends BaseVisitor {
 	}
 
 	@Override
-	public void visitThread(ThreadsInfo thread) {
+	public void visitThread(ThreadsInfo thread) {//线程
 		Extension frameworkThread = m_statusInfo.findOrCreateExtension("FrameworkThread");
+		//ThreadMXBean
 		ThreadMXBean bean = ManagementFactory.getThreadMXBean();
 
 		bean.setThreadContentionMonitoringEnabled(true);
 
 		ThreadInfo[] threads;
 
-		if (m_dumpLocked) {
+		if (m_dumpLocked) {//是否dump lock的线程
 			threads = bean.dumpAllThreads(true, true);
 		} else {
 			threads = bean.dumpAllThreads(false, false);
@@ -293,12 +309,16 @@ public class StatusInfoCollector extends BaseVisitor {
 		thread.setPeekCount(bean.getPeakThreadCount());
 		thread.setTotalStartedCount((int) bean.getTotalStartedThreadCount());
 
+		//根据线程名统计
 		int jbossThreadsCount = countThreadsByPrefix(threads, "http-", "catalina-exec-");
 		int jettyThreadsCount = countThreadsBySubstring(threads, "@qtp");
 
+		//stack信息
 		m_jstackInfo = getThreadDump(threads);
 
+		//分别统计线程个数
 		frameworkThread.findOrCreateExtensionDetail("HttpThread").setValue(jbossThreadsCount + jettyThreadsCount);
+		//cat 线程
 		frameworkThread.findOrCreateExtensionDetail("CatThread").setValue(countThreadsByPrefix(threads, "Cat-"));
 		frameworkThread.findOrCreateExtensionDetail("PigeonThread")
 								.setValue(countThreadsByPrefix(threads, "Pigeon-", "DPSF-", "Netty-", "Client-ResponseProcessor"));

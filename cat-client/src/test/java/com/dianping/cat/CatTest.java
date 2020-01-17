@@ -48,5 +48,11 @@ public class CatTest {
 		Cat.logHeartbeat("logHeartbeat", "logHeartbeat", Message.SUCCESS, null);
 
 		Assert.assertEquals(true, Cat.isInitialized());
+
+		try {
+			Thread.sleep(100000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }

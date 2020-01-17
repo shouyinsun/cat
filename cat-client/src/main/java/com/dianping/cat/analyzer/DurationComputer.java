@@ -18,6 +18,7 @@
  */
 package com.dianping.cat.analyzer;
 
+//持续时长计算
 public class DurationComputer {
 
 	public static int computeDuration(int duration) {
@@ -25,13 +26,13 @@ public class DurationComputer {
 			return 1;
 		} else if (duration < 20) {
 			return duration;
-		} else if (duration < 200) {
+		} else if (duration < 200) {//5倍数
 			return duration - duration % 5;
-		} else if (duration < 500) {
+		} else if (duration < 500) {//20倍数
 			return duration - duration % 20;
-		} else if (duration < 2000) {
+		} else if (duration < 2000) {//50
 			return duration - duration % 50;
-		} else if (duration < 20000) {
+		} else if (duration < 20000) {//500
 			return duration - duration % 500;
 		} else if (duration < 1000000) {
 			return duration - duration % 10000;

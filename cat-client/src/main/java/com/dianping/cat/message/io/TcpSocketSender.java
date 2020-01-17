@@ -49,6 +49,7 @@ import com.dianping.cat.message.spi.internal.DefaultMessageTree;
 import com.dianping.cat.status.StatusExtension;
 import com.dianping.cat.status.StatusExtensionRegister;
 
+//tcp socket sender
 @Named
 public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 
@@ -71,8 +72,9 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 	@Inject
 	private MessageIdFactory m_factory;
 
+	//message 队列
 	private MessageQueue m_queue = new DefaultMessageQueue(SIZE);
-
+	//atomicMessage 队列
 	private MessageQueue m_atomicQueue = new DefaultMessageQueue(SIZE);
 
 	private ChannelManager m_channelManager;
@@ -97,6 +99,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 	public void initialize(List<InetSocketAddress> addresses) {
 		m_channelManager = new ChannelManager(m_logger, addresses, m_configManager, m_factory);
 
+		//tcpSocket发送器 run
 		Threads.forGroup("cat").start(this);
 		Threads.forGroup("cat").start(m_channelManager);
 
@@ -169,10 +172,11 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 	}
 
 	private void offer(MessageTree tree) {
-		if (m_configManager.isAtomicMessage(tree)) {
+		if (m_configManager.isAtomicMessage(tree)) {//atomic message
 			boolean result = m_atomicQueue.offer(tree);
 
 			if (!result) {
+				//queue is full
 				logQueueFullInfo(tree);
 			}
 		} else {
@@ -187,6 +191,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 	private void processAtomicMessage() {
 		while (true) {
 			if (shouldMerge(m_atomicQueue)) {
+				//merge之后,放入m_queue,最后的发送都是走m_queue
 				MessageTree tree = mergeTree(m_atomicQueue);
 				boolean result = m_queue.offer(tree);
 
@@ -208,6 +213,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 					MessageTree tree = m_queue.poll();
 
 					if (tree != null) {
+						//socket 发送
 						sendInternal(channel, tree);
 						tree.setMessage(null);
 					} else {
@@ -232,7 +238,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 	}
 
 	@Override
-	public void run() {
+	public void run() {//发送queue里messageTree
 		m_active = true;
 
 		while (m_active) {
@@ -248,7 +254,7 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 			if (tree != null) {
 				ChannelFuture channel = m_channelManager.channel();
 
-				if (channel != null) {
+				if (channel != null) {//socket 发送
 					sendInternal(channel, tree);
 				} else {
 					offer(tree);
@@ -260,31 +266,36 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 	}
 
 	@Override
-	public void send(MessageTree tree) {
+	public void send(MessageTree tree) {//发送消息
 		if (!m_configManager.isBlock()) {
 			double sampleRatio = m_configManager.getSampleRatio();
 
+			//命中样本比率
 			if (tree.canDiscard() && sampleRatio < 1.0 && (!tree.isHitSample())) {
-				processTreeInClient(tree);
+				processTreeInClient(tree);//client端处理,聚合
 			} else {
 				offer(tree);
 			}
 		}
 	}
 
+	//client端处理消息树
 	private void processTreeInClient(MessageTree tree) {
 		LocalAggregator.aggregate(tree);
 	}
 
+	//向 server 发送messageTree
 	public void sendInternal(ChannelFuture channel, MessageTree tree) {
-		if (tree.getMessageId() == null) {
+		if (tree.getMessageId() == null) {//messageId
 			tree.setMessageId(m_factory.getNextId());
 		}
 
+		//编码
 		ByteBuf buf = m_codec.encode(tree);
 
 		int size = buf.readableBytes();
 
+		//flush
 		channel.channel().writeAndFlush(buf);
 
 		if (m_statistics != null) {
@@ -292,7 +303,8 @@ public class TcpSocketSender implements Task, MessageSender, LogEnabled {
 		}
 	}
 
-	private boolean shouldMerge(MessageQueue queue) {
+	//时间跨度太大或者队列长度太长,需要merge
+	private boolean shouldMerge(MessageQueue queue) {//时间跨度太大
 		MessageTree tree = queue.peek();
 
 		if (tree != null) {

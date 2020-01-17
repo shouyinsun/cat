@@ -35,6 +35,7 @@ import org.unidal.lookup.annotation.Named;
 import com.dianping.cat.Cat;
 import com.dianping.cat.config.server.ServerConfigManager;
 
+//message分析管理
 @Named(type = MessageAnalyzerManager.class)
 public class DefaultMessageAnalyzerManager extends ContainerHolder
 						implements MessageAnalyzerManager, Initializable,	LogEnabled {
@@ -46,14 +47,18 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 
 	private long m_extraTime = 3 * MINUTE;
 
+	//分析器名称
 	private List<String> m_analyzerNames;
 
-	private Map<Long, Map<String, List<MessageAnalyzer>>> m_analyzers = new HashMap<Long, Map<String, List<MessageAnalyzer>>>();
+
+	//时间戳 ->  ( name -> List<MessageAnalyzer>)
+	private Map<Long, Map<String, List<MessageAnalyzer>>> m_analyzers = new HashMap();
 
 	@Override
 	public List<MessageAnalyzer> getAnalyzer(String name, long startTime) {
 		// remove last two hour analyzer
 		try {
+			//移除前两个小时
 			Map<String, List<MessageAnalyzer>> temp = m_analyzers.remove(startTime - m_duration * 2);
 
 			if (temp != null) {
@@ -67,6 +72,7 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 			Cat.logError(e);
 		}
 
+		//确定时间所在的周期
 		Map<String, List<MessageAnalyzer>> map = m_analyzers.get(startTime);
 
 		if (map == null) {
@@ -74,7 +80,7 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 				map = m_analyzers.get(startTime);
 
 				if (map == null) {
-					map = new HashMap<String, List<MessageAnalyzer>>();
+					map = new HashMap();
 					m_analyzers.put(startTime, map);
 				}
 			}
@@ -82,12 +88,12 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 
 		List<MessageAnalyzer> analyzers = map.get(name);
 
-		if (analyzers == null) {
+		if (analyzers == null) {//没有对应的分析器,添加一个
 			synchronized (map) {
 				analyzers = map.get(name);
 
 				if (analyzers == null) {
-					analyzers = new ArrayList<MessageAnalyzer>();
+					analyzers = new ArrayList();
 
 					MessageAnalyzer analyzer = lookup(MessageAnalyzer.class, name);
 
@@ -95,6 +101,9 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 					analyzer.initialize(startTime, m_duration, m_extraTime);
 					analyzers.add(analyzer);
 
+
+					//分析器的个数
+					// 同一个分析器可以配置生成多个
 					int count = analyzer.getAnanlyzerCount(name);
 
 					for (int i = 1; i < count; i++) {
@@ -118,15 +127,18 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 	}
 
 	@Override
-	public void initialize() throws InitializationException {
+	public void initialize() throws InitializationException {//初始化
+
+		//所有的messageAnalyzer
 		Map<String, MessageAnalyzer> map = lookupMap(MessageAnalyzer.class);
 
 		for (MessageAnalyzer analyzer : map.values()) {
 			analyzer.destroy();
 		}
 
-		m_analyzerNames = new ArrayList<String>(map.keySet());
+		m_analyzerNames = new ArrayList(map.keySet());
 
+		//sort
 		Collections.sort(m_analyzerNames, new Comparator<String>() {
 			@Override
 			public int compare(String str1, String str2) {
@@ -148,7 +160,7 @@ public class DefaultMessageAnalyzerManager extends ContainerHolder
 		});
 
 		ServerConfigManager manager = lookup(ServerConfigManager.class);
-		List<String> disables = new ArrayList<String>();
+		List<String> disables = new ArrayList();
 
 		for (String name : m_analyzerNames) {
 

@@ -50,18 +50,21 @@ import com.dianping.cat.message.spi.MessageManager;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.internal.DefaultMessageTree;
 
+
+//消息管理
 @Named(type = MessageManager.class)
 public class DefaultMessageManager extends ContainerHolder implements MessageManager, Initializable, LogEnabled {
 
 	@Inject
-	private ClientConfigManager m_configManager;
+	private ClientConfigManager m_configManager;//client端配置
 
 	@Inject
-	private TransportManager m_transportManager;
+	private TransportManager m_transportManager;//传输管理
 
 	@Inject
-	private MessageIdFactory m_factory;
+	private MessageIdFactory m_factory;//messageId 工厂
 
+	//threadLocal 的 context
 	private ThreadLocal<Context> m_context = new ThreadLocal<Context>();
 
 	private long m_throttleTimes;
@@ -74,6 +77,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 
 	private TransactionHelper m_validator = new TransactionHelper();
 
+	//
 	private Map<String, TaggedTransaction> m_taggedTransactions;
 
 	private AtomicInteger m_sampleCount = new AtomicInteger();
@@ -81,7 +85,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 	private Logger m_logger;
 
 	@Override
-	public void add(Message message) {
+	public void add(Message message) {//add message
 		Context ctx = getContext();
 
 		if (ctx != null) {
@@ -124,7 +128,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 		}
 	}
 
-	public void flush(MessageTree tree, boolean clearContext) {
+	public void flush(MessageTree tree, boolean clearContext) {//flush 消息,发送
 		MessageSender sender = m_transportManager.getSender();
 
 		if (sender != null && isMessageEnabled()) {
@@ -234,7 +238,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 		}
 
 		// initialize domain and IP address
-		try {
+		try {//messageIdFactory 初始化
 			m_factory.initialize(m_domain.getId());
 		} catch (Exception e) {
 			m_logger.error("error when create mark file", e);
@@ -320,7 +324,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 	}
 
 	@Override
-	public void setup() {
+	public void setup() {//设置context
 		Context ctx;
 
 		if (m_domain != null) {
@@ -333,6 +337,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 		if (samplingRate < 1.0 && hitSample(samplingRate)) {
 			ctx.m_tree.setHitSample(true);
 		}
+		//threadLocal 设置
 		m_context.set(ctx);
 	}
 
@@ -347,13 +352,13 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 	}
 
 	@Override
-	public void start(Transaction transaction, boolean forked) {
+	public void start(Transaction transaction, boolean forked) {//start transaction
 		Context ctx = getContext();
 
 		if (ctx != null) {
 			ctx.start(transaction, forked);
 
-			if (transaction instanceof TaggedTransaction) {
+			if (transaction instanceof TaggedTransaction) {//tagged transaction
 				TaggedTransaction tt = (TaggedTransaction) transaction;
 
 				m_taggedTransactions.put(tt.getTag(), tt);
@@ -364,9 +369,10 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 		}
 	}
 
-	class Context {
+	class Context {//context 上下文
 		private MessageTree m_tree;
 
+		//transaction 栈
 		private Stack<Transaction> m_stack;
 
 		private int m_length;
@@ -395,15 +401,16 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 			m_knownExceptions = new HashSet<Throwable>();
 		}
 
-		public void add(Message message) {
-			if (m_stack.isEmpty()) {
+		public void add(Message message) {//context中添加 message
+			if (m_stack.isEmpty()) {//transaction 的栈为空,直接flush
 				MessageTree tree = m_tree.copy();
 
 				tree.setMessage(message);
 				flush(tree, true);
-			} else {
+			} else {//存在transaction
 				Transaction parent = m_stack.peek();
 
+				//transaction 增加 message
 				addTransactionChild(message, parent);
 			}
 		}
@@ -440,11 +447,12 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 			*/
 		public boolean end(DefaultMessageManager manager, Transaction transaction) {
 			if (!m_stack.isEmpty()) {
+				//栈顶
 				Transaction current = m_stack.pop();
 
-				if (transaction == current) {
+				if (transaction == current) {//相等
 					m_validator.validate(m_stack.isEmpty() ? null : m_stack.peek(), current);
-				} else {
+				} else {//子transaction,继续弹出
 					while (transaction != current && !m_stack.empty()) {
 						m_validator.validate(m_stack.peek(), current);
 
@@ -452,7 +460,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 					}
 				}
 
-				if (m_stack.isEmpty()) {
+				if (m_stack.isEmpty()) {//root transaction
 					MessageTree tree = m_tree.copy();
 
 					m_tree.setMessageId(null);
@@ -462,6 +470,7 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 						adjustForTruncatedTransaction((Transaction) tree.getMessage());
 					}
 
+					//flush 发送
 					manager.flush(tree, true);
 					return true;
 				}
@@ -509,15 +518,16 @@ public class DefaultMessageManager extends ContainerHolder implements MessageMan
 				// Instead, we create a "soft" reference to forked transaction later, via linkAsRunAway()
 				// By doing so, there is no need for synchronization between parent and child threads.
 				// Both threads can complete() anytime despite the other thread.
-				if (!(transaction instanceof ForkedTransaction)) {
+				if (!(transaction instanceof ForkedTransaction)) {//非 forked transaction
 					Transaction parent = m_stack.peek();
+					//child
 					addTransactionChild(transaction, parent);
 				}
-			} else {
+			} else {//栈为空
 				m_tree.setMessage(transaction);
 			}
 
-			if (!forked) {
+			if (!forked) {//非forked
 				m_stack.push(transaction);
 			}
 		}

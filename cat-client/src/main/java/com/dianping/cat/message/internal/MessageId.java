@@ -20,6 +20,9 @@ package com.dianping.cat.message.internal;
 
 import org.unidal.lookup.util.StringUtils;
 
+//messageId
+//格式：ShopWeb-0a010680-375030-2
+// 四段组成：应用名+16机制机器的IP+小时数+当前小时内递增索引
 public class MessageId {
 	private String m_domain;
 
@@ -36,7 +39,7 @@ public class MessageId {
 		m_index = index;
 	}
 
-	public static MessageId parse(String messageId) {
+	public static MessageId parse(String messageId) {//ShopWeb-0a010680-375030-2
 		int index = -1;
 		int hour = -1;
 		String ipAddressInHex = null;

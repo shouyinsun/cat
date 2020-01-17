@@ -55,10 +55,13 @@ public class RealtimeConsumer extends ContainerHolder implements MessageConsumer
 
 	@Override
 	public void consume(MessageTree tree) {
+		//message 自己的时间戳
 		long timestamp = tree.getMessage().getTimestamp();
+		//找到对应周期
 		Period period = m_periodManager.findPeriod(timestamp);
 
 		if (period != null) {
+			//分发消息,交给周期任务
 			period.distribute(tree);
 		} else {
 			m_serverStateManager.addNetworkTimeError(1);
@@ -130,10 +133,11 @@ public class RealtimeConsumer extends ContainerHolder implements MessageConsumer
 	}
 
 	@Override
-	public void initialize() throws InitializationException {
+	public void initialize() throws InitializationException {//初始化
 		m_periodManager = new PeriodManager(HOUR, m_analyzerManager, m_serverStateManager, m_logger);
 		m_periodManager.init();
 
+		//开启periodManager线程,1s check一次是否开启新的period
 		Threads.forGroup("cat").start(m_periodManager);
 	}
 

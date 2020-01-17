@@ -22,6 +22,8 @@ import org.unidal.lookup.annotation.Named;
 
 import com.dianping.cat.statistic.ServerStatistic.Statistic;
 
+//server端
+// 统计管理
 @Named
 public class ServerStatisticManager {
 
@@ -90,6 +92,7 @@ public class ServerStatisticManager {
 	private Statistic getCurrentStatistic() {
 		long time = System.currentTimeMillis();
 
+		//1min 统计
 		time = time - time % (60 * 1000);
 
 		if (time != m_currentMunite) {
@@ -103,7 +106,7 @@ public class ServerStatisticManager {
 		return m_currentStatistic;
 	}
 
-	public void removeState(long time) {
+	public void removeState(long time) {//remove 统计状态
 		m_serverState.remove(time);
 	}
 }

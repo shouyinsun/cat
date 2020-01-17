@@ -25,10 +25,12 @@ import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.codec.NativeMessageCodec;
 import com.dianping.cat.message.spi.codec.PlainTextMessageCodec;
 
+//编解码器
 public class CodecHandler {
 
+	//明文
 	private static MessageCodec m_plainTextCodec = new PlainTextMessageCodec();
-
+	//native
 	private static MessageCodec m_nativeCodec = new NativeMessageCodec();
 
 	public static MessageTree decode(ByteBuf buf) {
@@ -40,9 +42,9 @@ public class CodecHandler {
 
 		buf.resetReaderIndex();
 
-		if ("PT1".equals(hint)) {
+		if ("PT1".equals(hint)) {//plainText
 			tree = m_plainTextCodec.decode(buf);
-		} else if ("NT1".equals(hint)) {
+		} else if ("NT1".equals(hint)) {//native
 			tree = m_nativeCodec.decode(buf);
 		} else {
 			throw new RuntimeException("Error message type : " + hint);

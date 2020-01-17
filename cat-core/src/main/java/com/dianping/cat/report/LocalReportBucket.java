@@ -60,10 +60,13 @@ public class LocalReportBucket implements ReportBucket, LogEnabled {
 	// tag => list of ids
 	private Map<String, List<String>> m_tagToIds = new HashMap<String, List<String>>();
 
+
+	//文件读锁
 	private ReentrantLock m_readLock;
 
 	private RandomAccessFile m_readDataFile;
 
+	//文件写锁
 	private ReentrantLock m_writeLock;
 
 	private long m_writeDataFileLength;

@@ -35,6 +35,8 @@ import com.dianping.cat.message.internal.MilliSecondTimer;
 import com.dianping.cat.message.io.TransportManager;
 import com.dianping.cat.status.StatusUpdateTask;
 
+
+//catClient 模块
 @Named(type = Module.class, value = CatClientModule.ID)
 public class CatClientModule extends AbstractModule {
 	public static final String ID = "cat-client";
@@ -49,19 +51,23 @@ public class CatClientModule extends AbstractModule {
 		// tracking thread start/stop
 		Threads.addListener(new CatThreadListener(ctx));
 
+		//client端配置
 		ClientConfigManager clientConfigManager = ctx.lookup(ClientConfigManager.class);
 
 		// warm up Cat
 		Cat.getInstance().setContainer(((DefaultModuleContext) ctx).getContainer());
 
 		// bring up TransportManager
+		// 传输
 		ctx.lookup(TransportManager.class);
 
 		if (clientConfigManager.isCatEnabled()) {
 			// start status update task
 			StatusUpdateTask statusUpdateTask = ctx.lookup(StatusUpdateTask.class);
+			//心跳,状态收集
 			Threads.forGroup("cat").start(statusUpdateTask);
 
+			//数据上报
 			Threads.forGroup("cat").start(new LocalAggregator.DataUploader());
 
 			LockSupport.parkNanos(10 * 1000 * 1000L); // wait 10 ms

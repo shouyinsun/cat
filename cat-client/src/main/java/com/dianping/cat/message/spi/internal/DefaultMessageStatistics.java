@@ -23,10 +23,13 @@ import org.unidal.lookup.annotation.Named;
 import com.dianping.cat.message.spi.MessageStatistics;
 import com.dianping.cat.message.spi.MessageTree;
 
+//message 统计
 @Named(type = MessageStatistics.class)
 public class DefaultMessageStatistics implements MessageStatistics {
+	//生产
 	private long m_produced;
 
+	//溢出
 	private long m_overflowed;
 
 	private long m_bytes;

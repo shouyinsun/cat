@@ -37,10 +37,11 @@ import com.dianping.cat.message.Transaction;
 import com.dianping.cat.message.spi.MessageManager;
 import com.dianping.cat.message.spi.MessageTree;
 
+//message producer
 @Named(type = MessageProducer.class)
 public class DefaultMessageProducer implements MessageProducer {
 	@Inject
-	private MessageManager m_manager;
+	private MessageManager m_manager;//消息管理
 
 	@Inject
 	private MessageIdFactory m_factory;

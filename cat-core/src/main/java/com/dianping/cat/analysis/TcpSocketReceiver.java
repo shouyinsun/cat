@@ -52,7 +52,7 @@ public final class TcpSocketReceiver implements LogEnabled {
 	private MessageHandler m_handler;
 
 	@Inject
-	private ServerStatisticManager m_serverStateManager;
+	private ServerStatisticManager m_serverStateManager;//server端状态统计
 
 	private ChannelFuture m_future;
 
@@ -92,17 +92,18 @@ public final class TcpSocketReceiver implements LogEnabled {
 
 	public void init() {
 		try {
-			startServer(m_port);
+			startServer(m_port);//server 启动
 		} catch (Exception e) {
 			m_logger.error(e.getMessage(), e);
 		}
 	}
 
-	public synchronized void startServer(int port) throws InterruptedException {
+	public synchronized void startServer(int port) throws InterruptedException {//netty 启动 socket
 		boolean linux = getOSMatches("Linux") || getOSMatches("LINUX");
 		int threads = 24;
 		ServerBootstrap bootstrap = new ServerBootstrap();
 
+		//linux下使用epoll
 		m_bossGroup = linux ? new EpollEventLoopGroup(threads) : new NioEventLoopGroup(threads);
 		m_workerGroup = linux ? new EpollEventLoopGroup(threads) : new NioEventLoopGroup(threads);
 		bootstrap.group(m_bossGroup, m_workerGroup);
@@ -113,13 +114,16 @@ public final class TcpSocketReceiver implements LogEnabled {
 			protected void initChannel(SocketChannel ch) throws Exception {
 				ChannelPipeline pipeline = ch.pipeline();
 
+				//编解码
 				pipeline.addLast("decode", new MessageDecoder());
 				pipeline.addLast("encode", new ClientMessageEncoder());
 			}
 		});
 
 		bootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
+		//禁用 nagle 算法
 		bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
+		//keepalive
 		bootstrap.childOption(ChannelOption.SO_KEEPALIVE, true);
 		bootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
 
@@ -131,7 +135,7 @@ public final class TcpSocketReceiver implements LogEnabled {
 		}
 	}
 
-	public class MessageDecoder extends ByteToMessageDecoder {
+	public class MessageDecoder extends ByteToMessageDecoder {//decode 解码
 		private long m_processCount;
 
 		@Override
@@ -140,6 +144,7 @@ public final class TcpSocketReceiver implements LogEnabled {
 				return;
 			}
 			buffer.markReaderIndex();
+			//前4个字节是length
 			int length = buffer.readInt();
 			buffer.resetReaderIndex();
 			if (buffer.readableBytes() < length + 4) {
@@ -152,11 +157,14 @@ public final class TcpSocketReceiver implements LogEnabled {
 					readBytes.markReaderIndex();
 					//readBytes.readInt();
 
+					//解码
 					DefaultMessageTree tree = (DefaultMessageTree) CodecHandler.decode(readBytes);
 
 					// readBytes.retain();
 					readBytes.resetReaderIndex();
 					tree.setBuffer(readBytes);
+					//messageHandler 处理 message
+					//交给consumer,找到对应周期,交给周期任务,然后再给分析器处理
 					m_handler.handle(tree);
 					m_processCount++;
 

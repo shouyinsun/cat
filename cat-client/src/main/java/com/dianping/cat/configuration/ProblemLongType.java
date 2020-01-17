@@ -18,6 +18,7 @@
  */
 package com.dianping.cat.configuration;
 
+//
 public enum ProblemLongType {
 
 	LONG_CACHE("long-cache", 25) {

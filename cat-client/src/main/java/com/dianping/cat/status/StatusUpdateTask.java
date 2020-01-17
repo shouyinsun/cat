@@ -44,6 +44,8 @@ import com.dianping.cat.message.spi.MessageStatistics;
 import com.dianping.cat.status.model.entity.Extension;
 import com.dianping.cat.status.model.entity.StatusInfo;
 
+
+//状态更新任务
 @Named
 public class StatusUpdateTask implements Task, Initializable {
 	@Inject
@@ -56,6 +58,7 @@ public class StatusUpdateTask implements Task, Initializable {
 
 	private String m_ipAddress;
 
+	//1min
 	private long m_interval = 60 * 1000; // 60 seconds
 
 	private String m_jars;
@@ -139,7 +142,7 @@ public class StatusUpdateTask implements Task, Initializable {
 			return;
 		}
 
-		while (true) {
+		while (true) {//错开59-01秒
 			Calendar cal = Calendar.getInstance();
 			int second = cal.get(Calendar.SECOND);
 
@@ -160,6 +163,7 @@ public class StatusUpdateTask implements Task, Initializable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		//记录 reboot 事务
 		MessageProducer cat = Cat.getProducer();
 		Transaction reboot = cat.newTransaction("System", "Reboot");
 
@@ -167,11 +171,12 @@ public class StatusUpdateTask implements Task, Initializable {
 		cat.logEvent("Reboot", NetworkInterfaceManager.INSTANCE.getLocalHostAddress(), Message.SUCCESS, null);
 		reboot.complete();
 
-		while (m_active) {
+		while (m_active) {//1min 一次
 			long start = MilliSecondTimer.currentTimeMillis();
 
 			if (m_manager.isCatEnabled()) {
 				Transaction t = cat.newTransaction("System", "Status");
+				//心跳统计状态信息
 				Heartbeat h = cat.newHeartbeat("Heartbeat", m_ipAddress);
 				StatusInfo status = new StatusInfo();
 
@@ -190,6 +195,7 @@ public class StatusUpdateTask implements Task, Initializable {
 				} finally {
 					h.complete();
 				}
+				//jstack
 				Cat.logEvent("Heartbeat", "jstack", Event.SUCCESS, collector.getJstackInfo());
 				t.setStatus(Message.SUCCESS);
 				t.complete();
@@ -199,8 +205,7 @@ public class StatusUpdateTask implements Task, Initializable {
 				long current = System.currentTimeMillis() / 1000 / 60;
 				int min = (int) (current % (60));
 
-				// refresh config 3 minute
-				if (min % 3 == 0) {
+				if (min % 3 == 0) {//3min refresh 一次配置
 					m_manager.refreshConfig();
 				}
 			} catch (Exception e) {

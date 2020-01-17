@@ -22,6 +22,7 @@ import org.unidal.web.mvc.AbstractModule;
 import org.unidal.web.mvc.annotation.ModuleMeta;
 import org.unidal.web.mvc.annotation.ModulePagesMeta;
 
+//report 模块 r
 @ModuleMeta(name = "r", defaultInboundAction = "top", defaultTransition = "default", defaultErrorAction = "default")
 @ModulePagesMeta({
 

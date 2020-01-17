@@ -67,12 +67,13 @@ public class DefaultReportManager<T> extends ContainerHolder implements ReportMa
 
 	private String m_name;
 
-	private Map<Long, Map<String, T>> m_reports = new ConcurrentHashMap<Long, Map<String, T>>();
+	//timestamp -> (domain -> report)
+	private Map<Long, Map<String, T>> m_reports = new ConcurrentHashMap();
 
 	private Logger m_logger;
 
 	public void cleanup(long time) {
-		List<Long> startTimes = new ArrayList<Long>(m_reports.keySet());
+		List<Long> startTimes = new ArrayList(m_reports.keySet());
 
 		for (long startTime : startTimes) {
 			if (startTime <= time) {
@@ -97,7 +98,7 @@ public class DefaultReportManager<T> extends ContainerHolder implements ReportMa
 		Map<String, T> reports = m_reports.get(startTime);
 
 		if (reports == null) {
-			return new HashSet<String>();
+			return new HashSet();
 		} else {
 			Set<String> domains = reports.keySet();
 			Set<String> result = new HashSet<String>();
@@ -325,7 +326,7 @@ public class DefaultReportManager<T> extends ContainerHolder implements ReportMa
 
 				m_reportDelegate.beforeSave(reports);
 
-				if (policy.forFile()) {
+				if (policy.forFile()) {//文件
 					bucket = m_bucketManager.getReportBucket(startTime, m_name, index);
 
 					try {
@@ -335,7 +336,7 @@ public class DefaultReportManager<T> extends ContainerHolder implements ReportMa
 					}
 				}
 
-				if (policy.forDatabase()) {
+				if (policy.forDatabase()) {//db
 					storeDatabase(startTime, reports);
 				}
 			}

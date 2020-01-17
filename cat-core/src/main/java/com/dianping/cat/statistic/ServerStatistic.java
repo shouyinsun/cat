@@ -23,7 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+//server 统计
 public class ServerStatistic {
+	//time(分钟数) -> Statistic
 	private Map<Long, Statistic> m_statistics = new ConcurrentHashMap<Long, Statistic>(100);
 
 	public synchronized Statistic findOrCreate(Long time) {
@@ -36,7 +38,7 @@ public class ServerStatistic {
 		return state;
 	}
 
-	public void remove(long time) {
+	public void remove(long time) {//remove
 		m_statistics.remove(time);
 	}
 

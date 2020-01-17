@@ -37,11 +37,13 @@ import com.dianping.cat.helper.TimeHelper;
 @Named
 public class ReportReloadTask extends ContainerHolder implements Initializable, Task {
 
+	//1h
 	private static final long DURATION = TimeHelper.ONE_HOUR;
 
 	@Inject
 	private ReportReloadConfigManager m_configManager;
 
+	//name -> ReportReloader
 	private Map<String, ReportReloader> m_reloaders;
 
 	@Override
@@ -51,6 +53,7 @@ public class ReportReloadTask extends ContainerHolder implements Initializable, 
 
 	@Override
 	public void initialize() throws InitializationException {
+		//所有的 ReportReloader
 		m_reloaders = lookupMap(ReportReloader.class);
 	}
 
@@ -58,7 +61,7 @@ public class ReportReloadTask extends ContainerHolder implements Initializable, 
 	public void run() {
 		boolean active = TimeHelper.sleepToNextMinute();
 
-		while (active) {
+		while (active) {//1h 一次
 			long current = System.currentTimeMillis();
 
 			try {

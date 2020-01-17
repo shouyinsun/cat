@@ -44,9 +44,12 @@ import com.dianping.cat.configuration.client.entity.Server;
 import com.dianping.cat.configuration.client.transform.DefaultSaxParser;
 import com.dianping.cat.message.spi.MessageTree;
 
+//client 配置管理
 @Named(type = ClientConfigManager.class)
 public class DefaultClientConfigManager implements LogEnabled, ClientConfigManager, Initializable {
 
+
+	//properties文件 /META-INF/app.properties
 	private static final String PROPERTIES_FILE = "/META-INF/app.properties";
 
 	private ClientConfig m_config;
@@ -61,6 +64,8 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 
 	private AtomicTreeParser m_atomicTreeParser = new AtomicTreeParser();
 
+
+	//problemLongType -> List<Integer>
 	private Map<String, List<Integer>> m_longConfigs = new LinkedHashMap<String, List<Integer>>();
 
 	private Logger m_logger;
@@ -114,6 +119,7 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 		} else {
 			List<Server> servers = m_config.getServers();
 			int size = servers.size();
+			//每次随机
 			int index = (int) (size * Math.random());
 
 			if (index >= 0 && index < size) {
@@ -124,6 +130,7 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 				if (httpPort == null || httpPort == 0) {
 					httpPort = 8080;
 				}
+				//router
 				return String.format("http://%s:%d/cat/s/router?domain=%s&ip=%s&op=json", server.getIp().trim(), httpPort,
 										getDomain().getId(), NetworkInterfaceManager.INSTANCE.getLocalHostAddress());
 			}
@@ -147,18 +154,21 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 
 	@Override
 	public void initialize() throws InitializationException {
+		//client.xml 文件
 		String xml = Cat.getCatHome() + "client.xml";
 		File configFile = new File(xml);
 
 		m_logger.info("client xml path " + xml);
+		//初始化
 		initialize(configFile);
 	}
 
 	@Override
 	public void initialize(File configFile) throws InitializationException {
 		try {
+			//globalConfig client.xml
 			ClientConfig globalConfig = null;
-			ClientConfig warConfig = null;
+			ClientConfig warConfig ;
 
 			if (configFile != null) {
 				if (configFile.exists()) {
@@ -176,6 +186,7 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 
 			// merge the two configures together to make it effected
 			if (globalConfig != null && warConfig != null) {
+				//merge 配置
 				globalConfig.accept(new ClientConfigMerger(warConfig));
 			}
 
@@ -223,13 +234,14 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 		if (appName != null) {
 			ClientConfig config = new ClientConfig();
 
+			//添加app.name的domain
 			config.addDomain(new Domain(appName));
 			return config;
 		}
 		return null;
 	}
 
-	private String loadProjectName() {
+	private String loadProjectName() {//app.name
 		String appName = null;
 		InputStream in = null;
 		try {
@@ -266,7 +278,9 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 		return appName;
 	}
 
-	public void refreshConfig() {
+	public void refreshConfig() {//refresh 配置
+
+		//server config url
 		String url = getServerConfigUrl();
 
 		try {
@@ -274,6 +288,7 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 			String content = Files.forIO().readFrom(inputstream, "utf-8");
 			KVConfig routerConfig = (KVConfig) m_jsonBuilder.parse(content.trim(), KVConfig.class);
 
+			//routers 信息
 			m_routers = routerConfig.getValue("routers");
 			m_block = Boolean.valueOf(routerConfig.getValue("block").trim());
 
@@ -292,6 +307,7 @@ public class DefaultClientConfigManager implements LogEnabled, ClientConfigManag
 				String propertyName = name + "s";
 				String values = routerConfig.getValue(propertyName);
 
+				//thresholds 值
 				if (values != null) {
 					List<String> valueStrs = Splitters.by(',').trim().split(values);
 					List<Integer> thresholds = new LinkedList<Integer>();

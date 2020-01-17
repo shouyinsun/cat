@@ -29,6 +29,8 @@ import org.unidal.lookup.annotation.Inject;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
+//消息分析器
 public abstract class AbstractMessageAnalyzer<R> extends ContainerHolder implements MessageAnalyzer {
 	public static final long MINUTE = 60 * 1000L;
 
@@ -54,8 +56,8 @@ public abstract class AbstractMessageAnalyzer<R> extends ContainerHolder impleme
 	private AtomicBoolean m_active = new AtomicBoolean(true);
 
 	@Override
-	public void analyze(MessageQueue queue) {
-		while (!isTimeout() && isActive()) {
+	public void analyze(MessageQueue queue) {//分析处理
+		while (!isTimeout() && isActive()) {//时间周期内并且active
 			MessageTree tree = queue.poll();
 
 			if (tree != null) {
@@ -71,7 +73,7 @@ public abstract class AbstractMessageAnalyzer<R> extends ContainerHolder impleme
 			}
 		}
 
-		while (true) {
+		while (true) {//超期或者inactive,处理完队列剩余
 			MessageTree tree = queue.poll();
 
 			if (tree != null) {

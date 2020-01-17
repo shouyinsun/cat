@@ -325,6 +325,7 @@
 		<component>
 			<role>org.unidal.initialization.Module</role>
 			<role-hint>cat-home</role-hint>
+			<!--	catHome module		-->
 			<implementation>com.dianping.cat.CatHomeModule</implementation>
 		</component>
 		<component>
@@ -355,6 +356,7 @@
 			<role>org.unidal.initialization.ModuleManager</role>
 			<implementation>org.unidal.initialization.DefaultModuleManager</implementation>
 			<configuration>
+				<!-- topLevelModules -->
 				<topLevelModules>cat-home</topLevelModules>
 			</configuration>
 		</component>

@@ -39,25 +39,29 @@ import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.report.DefaultReportManager.StoragePolicy;
 import com.dianping.cat.report.ReportManager;
 
+//顶级分析器
+// domain 为 cat
+// 统计Error,RuntimeException,Exception
 @Named(type = MessageAnalyzer.class, value = TopAnalyzer.ID, instantiationStrategy = Named.PER_LOOKUP)
 public class TopAnalyzer extends AbstractMessageAnalyzer<TopReport> implements LogEnabled {
 	public static final String ID = "top";
 
 	@Inject(ID)
-	private ReportManager<TopReport> m_reportManager;
+	private ReportManager<TopReport> m_reportManager;//报表管理
 
 	@Inject
 	private ServerFilterConfigManager m_serverFilterConfigManager;
 
+	//Error,RuntimeException,Exception
 	private Set<String> m_errorTypes;
 
 	@Override
 	public synchronized void doCheckpoint(boolean atEnd) {
 		long startTime = getStartTime();
 
-		if (atEnd && !isLocalMode()) {
+		if (atEnd && !isLocalMode()) {//结束,存储文件和db
 			m_reportManager.storeHourlyReports(startTime, StoragePolicy.FILE_AND_DB, m_index);
-		} else {
+		} else {//文件
 			m_reportManager.storeHourlyReports(startTime, StoragePolicy.FILE, m_index);
 		}
 	}
@@ -96,6 +100,7 @@ public class TopAnalyzer extends AbstractMessageAnalyzer<TopReport> implements L
 		String domain = tree.getDomain();
 
 		if (m_serverFilterConfigManager.validateDomain(domain)) {
+			//domain 为 cat
 			TopReport report = m_reportManager.getHourlyReport(getStartTime(), Constants.CAT, true);
 
 			List<Event> events = tree.getEvents();

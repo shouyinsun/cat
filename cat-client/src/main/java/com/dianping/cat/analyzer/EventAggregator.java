@@ -28,10 +28,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+//event聚合器
 public class EventAggregator {
 
 	private static EventAggregator s_instance = new EventAggregator();
 
+	//type -> (name -> EventData)
 	private volatile ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>> m_events = new ConcurrentHashMap<String, ConcurrentHashMap<String, EventData>>();
 
 	public static EventAggregator getInstance() {
@@ -112,6 +114,7 @@ public class EventAggregator {
 		}
 
 		if (hasData) {
+			//System EventAggregator
 			Transaction t = Cat.newTransaction(CatConstants.CAT_SYSTEM, this.getClass().getSimpleName());
 			MessageTree tree = Cat.getManager().getThreadLocalMessageTree();
 
@@ -123,7 +126,7 @@ public class EventAggregator {
 					if (data.getCount() > 0) {
 						Event tmp = Cat.newEvent(data.getType(), data.getName());
 						StringBuilder sb = new StringBuilder(32);
-
+						//@ 批量flag
 						sb.append(CatConstants.BATCH_FLAG).append(data.getCount()).append(CatConstants.SPLIT).append(data.getError());
 						tmp.addData(sb.toString());
 						tmp.setSuccessStatus();

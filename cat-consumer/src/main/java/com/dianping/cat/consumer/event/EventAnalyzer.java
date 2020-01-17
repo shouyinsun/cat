@@ -39,6 +39,7 @@ import org.unidal.lookup.annotation.Named;
 import java.util.List;
 import java.util.Set;
 
+//event分析器
 @Named(type = MessageAnalyzer.class, value = EventAnalyzer.ID, instantiationStrategy = Named.PER_LOOKUP)
 public class EventAnalyzer extends AbstractMessageAnalyzer<EventReport> implements LogEnabled {
 
@@ -239,6 +240,7 @@ public class EventAnalyzer extends AbstractMessageAnalyzer<EventReport> implemen
 			String data = String.valueOf(event.getData());
 			int total = 1;
 			int fail = 0;
+			//批量flag
 			boolean batchData = data.length() > 0 && data.charAt(0) == CatConstants.BATCH_FLAG;
 
 			if (batchData) {

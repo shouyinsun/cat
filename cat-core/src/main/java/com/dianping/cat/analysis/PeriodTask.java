@@ -31,10 +31,13 @@ import com.dianping.cat.CatConstants;
 import com.dianping.cat.message.spi.MessageQueue;
 import com.dianping.cat.message.spi.MessageTree;
 
+//周期任务
 public class PeriodTask implements Task, LogEnabled {
 
 	private MessageAnalyzer m_analyzer;
 
+
+	//message queue
 	private MessageQueue m_queue;
 
 	private long m_startTime;
@@ -62,6 +65,7 @@ public class PeriodTask implements Task, LogEnabled {
 
 	public boolean enqueue(MessageTree tree) {
 		if (m_analyzer.isEligable(tree)) {
+			//合适,入队
 			boolean result = m_queue.offer(tree);
 
 			if (!result) { // trace queue overflow
@@ -81,7 +85,7 @@ public class PeriodTask implements Task, LogEnabled {
 		}
 	}
 
-	public void finish() {
+	public void finish() {//结束
 		try {
 			m_analyzer.doCheckpoint(true);
 			m_analyzer.destroy();
@@ -103,8 +107,9 @@ public class PeriodTask implements Task, LogEnabled {
 	}
 
 	@Override
-	public void run() {
+	public void run() {//run
 		try {
+			//分析器,处理队列里的message
 			m_analyzer.analyze(m_queue);
 		} catch (Exception e) {
 			Cat.logError(e);

@@ -26,10 +26,11 @@ import org.unidal.lookup.annotation.Named;
 
 import com.dianping.cat.message.spi.MessageTree;
 
+//message 处理器
 @Named(type = MessageHandler.class)
 public class DefaultMessageHandler extends ContainerHolder implements MessageHandler, LogEnabled {
 	@Inject
-	private MessageConsumer m_consumer;
+	private MessageConsumer m_consumer;//message consumer
 
 	private Logger m_logger;
 
@@ -39,13 +40,14 @@ public class DefaultMessageHandler extends ContainerHolder implements MessageHan
 	}
 
 	@Override
-	public void handle(MessageTree tree) {
+	public void handle(MessageTree tree) {//handle messageTree
 		if (m_consumer == null) {
 			m_consumer = lookup(MessageConsumer.class);
 		}
 
 		try {
-			m_consumer.consume(tree);
+			//messageConsumer 处理 message
+			m_consumer.consume(tree);//consumer 消息树
 		} catch (Throwable e) {
 			m_logger.error("Error when consuming message in " + m_consumer + "! tree: " + tree, e);
 		}

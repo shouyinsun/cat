@@ -32,6 +32,7 @@ import org.unidal.lookup.annotation.Named;
 import com.dianping.cat.configuration.ClientConfigManager;
 import com.dianping.cat.configuration.client.entity.Server;
 
+//传输管理
 @Named(type = TransportManager.class)
 public class DefaultTransportManager implements TransportManager, Initializable, LogEnabled {
 	@Inject
@@ -62,6 +63,7 @@ public class DefaultTransportManager implements TransportManager, Initializable,
 		} else {
 			List<InetSocketAddress> addresses = new ArrayList<InetSocketAddress>();
 
+			//servers
 			for (Server server : servers) {
 				if (server.isEnabled()) {
 					addresses.add(new InetSocketAddress(server.getIp(), server.getPort()));

@@ -41,6 +41,7 @@ import com.dianping.cat.message.spi.MessageCodec;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.message.spi.internal.DefaultMessageTree;
 
+//原生编解码器
 public class NativeMessageCodec implements MessageCodec {
 
 	public static final String ID = "NT1"; // native message tree version 1
@@ -112,6 +113,7 @@ public class NativeMessageCodec implements MessageCodec {
 		try {
 			Context ctx = new Context(tree);
 
+			//先占位,后面设置长度
 			buf.writeInt(0); // place-holder
 
 			Codec.HEADER.encode(ctx, buf, null);
@@ -123,6 +125,7 @@ public class NativeMessageCodec implements MessageCodec {
 			}
 			int readableBytes = buf.readableBytes();
 
+			//长度
 			buf.setInt(0, readableBytes - 4); // reset the message size
 
 			return buf;
@@ -193,8 +196,8 @@ public class NativeMessageCodec implements MessageCodec {
 			protected void encode(Context ctx, ByteBuf buf, Message msg) {
 				MessageTree tree = ctx.getMessageTree();
 
-				ctx.writeVersion(buf, ID);
-				ctx.writeString(buf, tree.getDomain());
+				ctx.writeVersion(buf, ID);//版本
+				ctx.writeString(buf, tree.getDomain());//domain
 				ctx.writeString(buf, tree.getHostName());
 				ctx.writeString(buf, tree.getIpAddress());
 				ctx.writeString(buf, tree.getThreadGroupName());

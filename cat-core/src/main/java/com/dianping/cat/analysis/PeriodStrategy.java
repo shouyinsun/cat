@@ -18,11 +18,15 @@
  */
 package com.dianping.cat.analysis;
 
+
+//周期策略
 public class PeriodStrategy {
 	private long m_duration;
 
+	//延后时间结束上一周期
 	private long m_extraTime;
 
+	//提前时间开启下一周期
 	private long m_aheadTime;
 
 	private long m_lastStartTime;

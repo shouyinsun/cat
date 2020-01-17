@@ -39,23 +39,28 @@ import com.dianping.cat.Cat;
 import com.dianping.cat.configuration.NetworkInterfaceManager;
 import com.dianping.cat.util.CleanupHelper;
 
+//messageId 工厂
 @Named
 public class MessageIdFactory {
 	public static final long HOUR = 3600 * 1000L;
 
+	//小时数
 	private volatile long m_timestamp = getTimestamp();
 
+	//同一个小时内的index
 	private volatile AtomicInteger m_index = new AtomicInteger(0);
 
 	private String m_domain = "UNKNOWN";
 
 	private String m_ipAddress;
 
+	//mmap
 	private MappedByteBuffer m_byteBuffer;
 
 	private RandomAccessFile m_markFile;
 
-	private Map<String, AtomicInteger> m_map = new ConcurrentHashMap<String, AtomicInteger>(100);
+	//domain -> index
+	private Map<String, AtomicInteger> m_map = new ConcurrentHashMap(100);
 
 	private int m_retry;
 
@@ -114,7 +119,9 @@ public class MessageIdFactory {
 		return mark;
 	}
 
-	public String getNextId() {
+
+	//应用名+16机制机器的IP+小时数+当前小时内递增索引
+	public String getNextId() {//生成messageId
 		long timestamp = getTimestamp();
 
 		if (timestamp != m_timestamp) {
@@ -167,6 +174,7 @@ public class MessageIdFactory {
 			StringBuilder sb = new StringBuilder(m_domain.length() + 32);
 
 			int processID = getProcessID();
+			//开启多实例
 			if (Cat.isMultiInstanceEnable() && processID > 0) {
 				sb.append(domain).append('-').append(m_ipAddress).append(".").append(processID).append('-').append(timestamp).append('-').append(index);
 			} else {
@@ -224,6 +232,7 @@ public class MessageIdFactory {
 		File mark = createMarkFile(domain);
 		m_markFile = new RandomAccessFile(mark, "rw");
 		m_markChannel = m_markFile.getChannel();
+		//mmap 内存映射
 		m_byteBuffer = m_markChannel.map(MapMode.READ_WRITE, 0, 1024 * 1024L);
 		m_idPrefix = initIdPrefix(getTimestamp(), false);
 		m_idPrefixOfMultiMode = initIdPrefix(getTimestamp(), true);
@@ -293,6 +302,7 @@ public class MessageIdFactory {
 	}
 
 	private void resetCounter(long timestamp) {
+		//
 		m_index.set(0);
 
 		for (Entry<String, AtomicInteger> entry : m_map.entrySet()) {

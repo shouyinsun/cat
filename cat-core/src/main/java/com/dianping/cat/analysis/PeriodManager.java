@@ -29,12 +29,15 @@ import org.unidal.lookup.annotation.Inject;
 import com.dianping.cat.Cat;
 import com.dianping.cat.statistic.ServerStatisticManager;
 
+//周期管理
 public class PeriodManager implements Task {
+	//3min
 	public static long EXTRATIME = 3 * 60 * 1000L;
 
 	private PeriodStrategy m_strategy;
 
-	private List<Period> m_periods = new ArrayList<Period>();
+	//周期
+	private List<Period> m_periods = new ArrayList();
 
 	private boolean m_active;
 
@@ -49,6 +52,7 @@ public class PeriodManager implements Task {
 
 	public PeriodManager(long duration, MessageAnalyzerManager analyzerManager,	ServerStatisticManager serverStateManager,
 							Logger logger) {
+		//提前、延迟分别3min
 		m_strategy = new PeriodStrategy(duration, EXTRATIME, EXTRATIME);
 		m_active = true;
 		m_analyzerManager = analyzerManager;
@@ -56,13 +60,14 @@ public class PeriodManager implements Task {
 		m_logger = logger;
 	}
 
-	private void endPeriod(long startTime) {
+	private void endPeriod(long startTime) {//结束周期
 		int len = m_periods.size();
 
 		for (int i = 0; i < len; i++) {
 			Period period = m_periods.get(i);
 
 			if (period.isIn(startTime)) {
+				//结束
 				period.finish();
 				m_periods.remove(i);
 				break;
@@ -93,7 +98,7 @@ public class PeriodManager implements Task {
 
 	@Override
 	public void run() {
-		while (m_active) {
+		while (m_active) {//1s check一次,是否开启下一周期
 			try {
 				long now = System.currentTimeMillis();
 				long value = m_strategy.next(now);
@@ -129,7 +134,7 @@ public class PeriodManager implements Task {
 		period.start();
 	}
 
-	private class EndTaskThread implements Task {
+	private class EndTaskThread implements Task {//结束任务线程
 
 		private long m_startTime;
 

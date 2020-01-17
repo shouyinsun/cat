@@ -31,6 +31,9 @@ package com.dianping.cat.message;
 	* @author Frankie Wu
 	* @see Event, Heartbeat, Transaction
 	*/
+
+//只有transaction是可以嵌套,没有嵌套的transaction是 atomic transaction
+// event、heartbeat都不能嵌套
 public interface Message {
 	public static final String SUCCESS = "0";
 

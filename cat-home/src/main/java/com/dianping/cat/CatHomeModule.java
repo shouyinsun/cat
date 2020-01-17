@@ -33,20 +33,24 @@ import com.dianping.cat.report.alert.AlarmManager;
 import com.dianping.cat.report.task.DefaultTaskConsumer;
 import com.dianping.cat.report.task.reload.ReportReloadTask;
 
+//catHome 模块
 @Named(type = Module.class, value = CatHomeModule.ID)
 public class CatHomeModule extends AbstractModule {
 	public static final String ID = "cat-home";
 
 	@Override
-	protected void execute(ModuleContext ctx) throws Exception {
+	protected void execute(ModuleContext ctx) throws Exception {//execute
+		//server配置管理
 		ServerConfigManager serverConfigManager = ctx.lookup(ServerConfigManager.class);
+		//报表加载任务
 		ReportReloadTask reportReloadTask = ctx.lookup(ReportReloadTask.class);
 
+		//线程组
 		Threads.forGroup("cat").start(reportReloadTask);
 
 		ctx.lookup(MessageConsumer.class);
 
-		if (serverConfigManager.isJobMachine()) {
+		if (serverConfigManager.isJobMachine()) {//启用job
 			DefaultTaskConsumer taskConsumer = ctx.lookup(DefaultTaskConsumer.class);
 
 			Threads.forGroup("cat").start(taskConsumer);
@@ -54,10 +58,11 @@ public class CatHomeModule extends AbstractModule {
 
 		AlarmManager alarmManager = ctx.lookup(AlarmManager.class);
 
-		if (serverConfigManager.isAlertMachine()) {
+		if (serverConfigManager.isAlertMachine()) {//启用alert 告警
 			alarmManager.startAlarm();
 		}
 
+		//消息consumer
 		final MessageConsumer consumer = ctx.lookup(MessageConsumer.class);
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -74,11 +79,15 @@ public class CatHomeModule extends AbstractModule {
 	}
 
 	@Override
-	protected void setup(ModuleContext ctx) throws Exception {
+	protected void setup(ModuleContext ctx) throws Exception {//setUp 设置
+
+		//tcpSocketReceiver
 		final TcpSocketReceiver messageReceiver = ctx.lookup(TcpSocketReceiver.class);
 
+		//start server
 		messageReceiver.init();
 
+		//关闭钩子
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 
 			@Override

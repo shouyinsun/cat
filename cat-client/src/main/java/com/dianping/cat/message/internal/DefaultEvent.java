@@ -35,9 +35,10 @@ public class DefaultEvent extends AbstractMessage implements Event {
 	}
 
 	@Override
-	public void complete() {
+	public void complete() {//complete
 		setCompleted(true);
 
+		//complete 都是向 MessageManager 中 add message
 		if (m_manager != null) {
 			m_manager.add(this);
 		}

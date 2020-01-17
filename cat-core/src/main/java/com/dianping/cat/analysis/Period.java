@@ -36,6 +36,7 @@ import com.dianping.cat.message.spi.MessageQueue;
 import com.dianping.cat.message.spi.MessageTree;
 import com.dianping.cat.statistic.ServerStatisticManager;
 
+//周期
 public class Period {
 	private static final int QUEUE_SIZE = 30000;
 
@@ -43,6 +44,8 @@ public class Period {
 
 	private long m_endTime;
 
+
+	//analyzerName  -> List<PeriodTask>
 	private Map<String, List<PeriodTask>> m_tasks;
 
 	@Inject
@@ -62,14 +65,20 @@ public class Period {
 		m_serverStateManager = serverStateManager;
 		m_logger = logger;
 
+
+		//所有的分析器
 		List<String> names = m_analyzerManager.getAnalyzerNames();
 
-		m_tasks = new HashMap<String, List<PeriodTask>>();
-		for (String name : names) {
+		m_tasks = new HashMap();
+		for (String name : names) {//分析器名称
+
+			//一个分析器,可以开多个
 			List<MessageAnalyzer> messageAnalyzers = m_analyzerManager.getAnalyzer(name, startTime);
 
 			for (MessageAnalyzer analyzer : messageAnalyzers) {
 				MessageQueue queue = new DefaultMessageQueue(QUEUE_SIZE);
+
+				//new 周期任务
 				PeriodTask task = new PeriodTask(analyzer, queue, startTime);
 
 				task.enableLogging(m_logger);
@@ -77,7 +86,7 @@ public class Period {
 				List<PeriodTask> analyzerTasks = m_tasks.get(name);
 
 				if (analyzerTasks == null) {
-					analyzerTasks = new ArrayList<PeriodTask>();
+					analyzerTasks = new ArrayList();
 					m_tasks.put(name, analyzerTasks);
 				}
 				analyzerTasks.add(task);
@@ -85,7 +94,7 @@ public class Period {
 		}
 	}
 
-	public void distribute(MessageTree tree) {
+	public void distribute(MessageTree tree) {//分发message
 		m_serverStateManager.addMessageTotal(tree.getDomain(), 1);
 		boolean success = true;
 		String domain = tree.getDomain();
@@ -96,14 +105,18 @@ public class Period {
 			int index = 0;
 			boolean manyTasks = length > 1;
 
+			//同一个分析器可能有多个周期任务
 			if (manyTasks) {
+				//domain,hash取模
 				index = Math.abs(domain.hashCode()) % length;
 			}
 			PeriodTask task = tasks.get(index);
+			//入周期任务队列
 			boolean enqueue = task.enqueue(tree);
 
 			if (!enqueue) {
 				if (manyTasks) {
+					//队列满了,换一个再试一次
 					task = tasks.get((index + 1) % length);
 					enqueue = task.enqueue(tree);
 
@@ -116,14 +129,14 @@ public class Period {
 			}
 		}
 
-		if ((!success) && (!tree.isProcessLoss())) {
+		if ((!success) && (!tree.isProcessLoss())) {//丢失
 			m_serverStateManager.addMessageTotalLoss(tree.getDomain(), 1);
 
 			tree.setProcessLoss(true);
 		}
 	}
 
-	public void finish() {
+	public void finish() {//结束周期
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date startDate = new Date(m_startTime);
 		Date endDate = new Date(m_endTime - 1);
@@ -133,7 +146,7 @@ public class Period {
 
 		try {
 			for (Entry<String, List<PeriodTask>> tasks : m_tasks.entrySet()) {
-				for (PeriodTask task : tasks.getValue()) {
+				for (PeriodTask task : tasks.getValue()) {//结束任务
 					task.finish();
 				}
 			}
@@ -146,7 +159,7 @@ public class Period {
 	}
 
 	public List<MessageAnalyzer> getAnalyzer(String name) {
-		List<MessageAnalyzer> analyzers = new ArrayList<MessageAnalyzer>();
+		List<MessageAnalyzer> analyzers = new ArrayList();
 		List<PeriodTask> tasks = m_tasks.get(name);
 
 		if (tasks != null) {
@@ -158,7 +171,7 @@ public class Period {
 	}
 
 	public List<MessageAnalyzer> getAnalyzers() {
-		List<MessageAnalyzer> analyzers = new ArrayList<MessageAnalyzer>(m_tasks.size());
+		List<MessageAnalyzer> analyzers = new ArrayList(m_tasks.size());
 
 		for (Entry<String, List<PeriodTask>> tasks : m_tasks.entrySet()) {
 			for (PeriodTask task : tasks.getValue()) {
@@ -177,7 +190,7 @@ public class Period {
 		return timestamp >= m_startTime && timestamp < m_endTime;
 	}
 
-	public void start() {
+	public void start() {//周期开始,开始任务
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 		m_logger.info(String.format("Starting %s tasks in period [%s, %s]", m_tasks.size(),	df.format(new Date(m_startTime)),

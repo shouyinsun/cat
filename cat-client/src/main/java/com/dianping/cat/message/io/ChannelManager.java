@@ -45,6 +45,7 @@ import org.unidal.tuple.Pair;
 import com.dianping.cat.configuration.ClientConfigManager;
 import com.dianping.cat.message.internal.MessageIdFactory;
 
+//channel管理
 public class ChannelManager implements Task {
 
 	private ClientConfigManager m_configManager;
@@ -90,8 +91,9 @@ public class ChannelManager implements Task {
 
 		String routerConfig = m_configManager.getRouters();
 
-		if (StringUtils.isNotEmpty(routerConfig)) {
+		if (StringUtils.isNotEmpty(routerConfig)) {//server端 routes 配置
 			List<InetSocketAddress> configedAddresses = parseSocketAddress(routerConfig);
+			//初始化channel
 			ChannelHolder holder = initChannel(configedAddresses, routerConfig);
 
 			if (holder != null) {
@@ -100,7 +102,9 @@ public class ChannelManager implements Task {
 				m_activeChannelHolder = new ChannelHolder();
 				m_activeChannelHolder.setServerAddresses(configedAddresses);
 			}
-		} else {
+		} else {//client.xml中配置的server
+
+			//init channel
 			ChannelHolder holder = initChannel(serverAddresses, null);
 
 			if (holder != null) {
@@ -257,7 +261,7 @@ public class ChannelManager implements Task {
 		try {
 			int len = addresses.size();
 
-			for (int i = 0; i < len; i++) {
+			for (int i = 0; i < len; i++) {//循环,直到成功连接一个server
 				InetSocketAddress address = addresses.get(i);
 				String hostAddress = address.getAddress().getHostAddress();
 				ChannelHolder holder = null;

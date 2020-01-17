@@ -69,9 +69,10 @@ public class Cat {
 	private Cat() {
 	}
 
-	private static void checkAndInitialize() {
+	private static void checkAndInitialize() {//初始化
 		try {
 			if (!s_init) {
+				//加载client.xml 初始化
 				initialize(new File(getCatHome(), "client.xml"));
 			}
 		} catch (Exception e) {

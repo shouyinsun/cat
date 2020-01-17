@@ -177,7 +177,7 @@ public class StateAnalyzer extends AbstractMessageAnalyzer<StateReport> implemen
 			long start = m_startTime - minute * 60 * 2;
 			long end = m_startTime - minute * 60;
 
-			for (; start < end; start += minute) {
+			for (; start < end; start += minute) {//移除服务端状态统计
 				m_serverStateManager.removeState(start);
 			}
 		}
